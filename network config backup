@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+
+import pexpect,sys,os,time
+#fip = open("iptwo.log","r")
+fip = open("ip.list","r")
+if not os.path.exists("/data/log"):
+    os.makedirs("/data/log")
+rlog = open("/data/log/run.log","a")
+elog = open("/data/log/error.log","a")
+date_log = time.strftime("%Y:%m:%d-%H:%M:%S",time.localtime(time.time()))
+date = time.strftime("%Y%m%d",time.localtime(time.time()))
+for ip in fip:
+    cfgname = ip.strip("\n") + "_" + date + ".log"
+    cfgname_zip = ip.strip("\n") + "_" + date + ".zip"
+    ssh = pexpect.spawn('ssh zhangjiayong@%s' %ip,timeout=50)
+    try:
+        i = ssh.expect(['continue connecting (yes/no)?','assword',pexpect.EOF,pexpect.TIMEOUT])
+        if i == 0:
+            ssh.sendline('yes')
+            ssh.sendline('\r\n')
+            i = ssh.expect(['assword'])
+            if i == 0 :
+                ssh.sendline("zjy000.com.cN")
+                ssh.sendline('\r\n')
+                time.sleep(2)
+        if i == 1:
+            ssh.sendline("zjy000.com.cN")
+            ssh.sendline('\r\n')
+            time.sleep(2)
+        if i == 2:
+            print("--------EFO---------")
+        if i == 3:
+            print(ip.strip()," 连接失败...")
+            elog.write(time.strftime("%Y:%m:%d-%H:%M:%S",time.localtime(time.time()))+" "+ip.strip()+" failed\n")
+            elog.flush()
+            continue
+        i = ssh.expect(['>','#']) 
+        #h3c
+        if i == 0:
+            ssh.sendline("tftp 172.16.16.240 put flash:/config.cfg %s" %cfgname)
+            time.sleep(2)
+            ssh.sendline("tftp 172.16.16.240 put flash:/startup.cfg %s" %cfgname)
+            time.sleep(2)
+            ssh.sendline("tftp 172.16.16.240 put flash:/vrpcfg.zip %s" %cfgname_zip)
+            time.sleep(2)
+            i = ssh.expect(['>'])
+            if i == 0:
+                print(ip.strip(),"successful")
+                rlog.write(time.strftime("%Y:%m:%d-%H:%M:%S",time.localtime(time.time()))+" "+ip.strip()+" successful\n")
+                rlog.flush()
+                    #exit()
+        #cisco
+        elif i == 1:
+            ssh.sendline("copy startup-config tftp:")
+            i = ssh.expect(['\?'])
+            if i == 0:
+                ssh.sendline("172.16.16.240")
+            i = ssh.expect('\?') 
+            if i == 0:
+                ssh.sendline("%s" %cfgname) 
+            i = ssh.expect(['#'])
+            if i == 0:
+                print(ip.strip(),"successful")
+                rlog.write(time.strftime("%Y:%m:%d-%H:%M:%S",time.localtime(time.time()))+" "+ip.strip()+" successful\n")
+                rlog.flush()
+                time.sleep(2)
+                #exit()
+
+   
+    #except pexpect.EOF:
+    except Exception as e:
+        print("咋地了......",e)         
+        elog.write(time.strftime("%Y:%m:%d-%H:%M:%S",time.localtime(time.time()))+" "+ip.strip()+" failed\n")
+        #exit()
+
+dir1 = "/data/tftpboot/*"
+dir2 = "/data/backup/"+date
+if not os.path.exists(dir2):
+    os.mkdir(dir2)
+os.environ['dir1'] = str(dir1)
+os.environ['dir2'] = str(dir2)
+os.system("mv $dir1 $dir2")
+fip.close()
+rlog.close()
+elog.close()
