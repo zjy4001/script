@@ -12,7 +12,7 @@ date = time.strftime("%Y%m%d",time.localtime(time.time()))
 for ip in fip:
     cfgname = ip.strip("\n") + "_" + date + ".log"
     cfgname_zip = ip.strip("\n") + "_" + date + ".zip"
-    ssh = pexpect.spawn('ssh zhangjiayong@%s' %ip,timeout=50)
+    ssh = pexpect.spawn('ssh jordan@%s' %ip,timeout=50)
     try:
         i = ssh.expect(['continue connecting (yes/no)?','assword',pexpect.EOF,pexpect.TIMEOUT])
         if i == 0:
@@ -20,11 +20,11 @@ for ip in fip:
             ssh.sendline('\r\n')
             i = ssh.expect(['assword'])
             if i == 0 :
-                ssh.sendline("zjy000.com.cN")
+                ssh.sendline("*******")
                 ssh.sendline('\r\n')
                 time.sleep(2)
         if i == 1:
-            ssh.sendline("zjy000.com.cN")
+            ssh.sendline("*******")
             ssh.sendline('\r\n')
             time.sleep(2)
         if i == 2:
